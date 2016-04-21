@@ -27,6 +27,7 @@
 
             reqGet.send(JSON.stringify(reqData));
         });
+
     }).then(function(data) {
       return new Promise(function(resolve) {
         var markaKeys = Object.keys(data);
@@ -79,10 +80,7 @@
 
         clusterer.add(geoObjects);
         myMap.geoObjects.add(clusterer);
-
-        myMap.setBounds(clusterer.getBounds(), {
-          checkZoomRange: true
-        });
+        }
 
         document.addEventListener('click', showReview);
 
@@ -105,7 +103,7 @@
                 };
                 xhrReview.send(JSON.stringify(req));
             }).then(function(data) {
-              var popup = document.querySelector('.popup');
+              // var popup = document.querySelector('.popup');
               var reviewList = document.querySelector('.review__list');
               var headerName = document.querySelector('.adress__name');
               var linkKeys = Object.keys(data);
@@ -146,8 +144,6 @@
           }
         }
 
-      }
-
       myMap.events.add('click', function (e){
 				var coords = e.get('coords');
 				ymaps.geocode(coords, {
@@ -159,70 +155,65 @@
 					var address = res.geoObjects.get(0).properties.get('text');
 					headerName.innerHTML = address;
 					popup.classList.remove('hide');
+          // console.log(coords);
+          // currentPosition = {pos: coords, address: address};
+          // console.log(currentPosition);
+          // console.log(coords);
+            showModal(coords);
 				}
 			});
+      });
 
       close.addEventListener('click', closePopup);
-
       function closePopup(e){
             // console.log(form.name.value);
           listReview.innerHTML = '';
           popup.classList.add('hide');
       }
 
+        form.addEventListener('submit', sendAjax);
+        function sendAjax(e) {
+          e.preventDefault();
+          var req = new XMLHttpRequest();
+          var headerName = document.querySelector('.adress__name');
+          var nameValue = form.name.value;
+          var placeValue = form.place.value;
+          var reviewValue = form.review.value;
+          var reviewList = document.querySelector('.review__list');
+          var date = new Date();
+          var addressText = headerName.innerText;
+          var data = {
+              'op': 'add',
+              'review': {
+                  'coords':{
+                      'x': coords[0],
+                      'y': coords[1]
+                  },
+                  'address': addressText,
+                  'name'   : nameValue,
+                  'place'  : placeValue,
+                  'text'   : reviewValue,
+                  'date'   : date.toUTCString()
+              }
+          };
 
+          var newLi = document.createElement('li');
+          newLi.classList.add('review__item');
+          newLi.innerHTML = '<b>'+ nameValue +'</b> <span>'+ placeValue +'</span> <span>'+ date.toUTCString() +'</span> <p>'+ reviewValue +'</p>'
+          reviewList.appendChild(newLi);
 
-      form.addEventListener('submit', sendAjax);
+          req.open('POST', 'http://localhost:3000/');
+          console.log(data);
 
-      function sendAjax(e) {
-        e.preventDefault();
-        var req = new XMLHttpRequest();
-        var headerName = document.querySelector('.adress__name');
-        var nameValue = form.name.value;
-        var placeValue = form.place.value;
-        var reviewValue = form.review.value;
-        var reviewList = document.querySelector('.review__list');
-        var date = new Date();
-        var addressText = headerName.innerText;
-        var data = {
-            'op': 'add',
-            'review': {
-                'coords':{
-                    'x': coords[0],
-                    'y': coords[1]
-                },
-                'address': addressText,
-                'name'   : nameValue,
-                'place'  : placeValue,
-                'text'   : reviewValue,
-                'date'   : date.toUTCString()
-            }
-        };
+          req.send(JSON.stringify(data));
 
-        var newLi = document.createElement('li');
-        newLi.classList.add('review__item');
-        newLi.innerHTML = '<b>'+ nameValue +'</b> <span>'+ placeValue +'</span> <span>'+ date.toUTCString() +'</span> <p>'+ reviewValue +'</p>'
-        reviewList.appendChild(newLi);
-
-        req.open('POST', 'http://localhost:3000/');
-        console.log(data);
-
-        req.send(JSON.stringify(data));
-
-        req.onload = function() {
-          console.log('data was sended.');
+          req.onload = function() {
+            console.log('data was sended.');
+          };
           form.name.value = '';
           form.place.value = '';
           form.review.value = '';
-          clusterer.add(new ymaps.Placemark( coords, {
-            }, {
-              preset: 'islands#icon',
-            }));
-            myMap.geoObjects.add(clusterer);
-        };
-
-      }
-    });
+        }
 
     });
     }).catch(function(e) {
